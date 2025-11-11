@@ -1,0 +1,86 @@
+#!/bin/bash
+# Задание 2
+
+set -u
+
+trap 'echo; echo "Чтобы завершить, введите q или Q."; ' INT
+
+
+make_secret() {
+  local digits used d s=""
+  used=()
+  while :; do
+    s=""
+    used=()
+    d=$((1 + RANDOM % 9))
+    s+=$d
+    used[$d]=1
+    while ((${#s} < 4)); do
+      d=$((RANDOM % 10))
+      [[ ${used[$d]+x} ]] && continue
+      used[$d]=1
+      s+=$d
+    done
+    echo "$s"
+    return
+  done
+}
+
+secret="$(make_secret)"
+# echo "DEBUG: $secret"
+
+attempt=0
+declare -a history=()
+
+is_unique4() {
+  local g="$1"
+  [[ $g =~ ^[0-9]{4}$ ]] || return 1
+  [[ ${g:0:1} != 0 ]] || return 1
+  local i j
+  for ((i=0;i<4;i++)); do
+    for ((j=i+1;j<4;j++)); do
+      [[ ${g:i:1} == ${g:j:1} ]] && return 1
+    done
+  done
+  return 0
+}
+
+while :; do
+  attempt=$((attempt+1))
+  printf "Попытка %d: " "$attempt"
+  IFS= read -r g || exit 1
+
+  case "$g" in
+    q|Q) exit 1 ;;
+  esac
+
+  if ! is_unique4 "$g"; then
+    echo "Ошибка ввода. Нужны 4 разные цифры (и не начинается с 0). Повторите."
+    attempt=$((attempt-1))
+    continue
+  fi
+
+  bulls=0; cows=0
+  for i in 0 1 2 3; do
+    gs=${g:i:1}
+    ss=${secret:i:1}
+    if [[ $gs == $ss ]]; then
+      bulls=$((bulls+1))
+    elif [[ $secret == *"$gs"* ]]; then
+      cows=$((cows+1))
+    fi
+  done
+
+  echo "Коров - $cows, Быков - $bulls"
+
+  history+=( "$attempt. $g (Коров - $cows Быков - $bulls)" )
+  echo
+  echo "История ходов:"
+  for h in "${history[@]}"; do echo "$h"; done
+  echo
+
+  if [[ $bulls -eq 4 ]]; then
+    echo "Вы угадали загаданное число: $secret"
+    exit 0
+  fi
+done
