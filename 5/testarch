@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -e
+outdir="."
+while getopts ":o:" opt; do
+  case "$opt" in
+    o) outdir="$OPTARG" ;;
+  esac
+done
+mkdir -p "$outdir"
+
+# пробуем разные декодеры base64 (GNU, BSD/macOS, openssl)
+if awk '/^__ARCHIVE_BELOW__/ {found=1; next} found {print}' "$0" | base64 -d 2>/dev/null | tar -xz -C "$outdir" 2>/dev/null; then
+  :
+elif awk '/^__ARCHIVE_BELOW__/ {found=1; next} found {print}' "$0" | base64 -D 2>/dev/null | tar -xz -C "$outdir" 2>/dev/null; then
+  :
+else
+  awk '/^__ARCHIVE_BELOW__/ {found=1; next} found {print}' "$0" | openssl base64 -d | tar -xz -C "$outdir"
+fi
+exit 0
+__ARCHIVE_BELOW__
+H4sIAAAAAAAAA+3RwQrCMAzG8TxKn6BLus4+jniYIAwHW0UfX7ubDJyXHsb+v0tCk0PK5xupTj+S
+6lJ1XZfeOtOYgqVY3lNZd13900Qec75Mzsk0jvnX3tZ8p3xz75/n623ofX5V+mAJ+BTj//lbCK2J
+0zrnfDt4/gAAAAAAAAAAAAAAAAD26w0zvg6xACgAAA==
